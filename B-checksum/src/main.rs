@@ -1,15 +1,28 @@
-use std::cmp;
+use std::{cmp, iter, str};
 use std::io::{self, Read};
 
-fn checksum(input: &str) -> u32 {
+fn parse_int(input: &str) -> Option<u32> {
+    input.parse().ok()
+}
+
+type LineIter<'a> = iter::FilterMap<str::SplitWhitespace<'a>, fn(&str) -> Option<u32>>;
+
+fn sum_lines<'a, F>(input: &'a str, mut line_handler: F) -> u32
+    where F: FnMut(LineIter<'a>) -> Option<u32>
+{
     input.split('\n').filter_map(|line| {
-        let mut values = line.split_whitespace().filter_map(|v| v.parse::<u32>().ok());
+        line_handler(line.split_whitespace().filter_map(parse_int))
+    }).sum()
+}
+
+fn checksum(input: &str) -> u32 {
+    sum_lines(input, |mut values| {
         values.next().map(|initial| {
             let (min, max) = values.fold((initial, initial),
                                          |(min, max), v| (cmp::min(min, v), cmp::max(max, v)));
             max - min
         })
-    }).sum()
+    })
 }
 
 fn main() {
